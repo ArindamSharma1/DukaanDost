@@ -1,16 +1,41 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { WHITE, GRAY_DARK, BORDER } from '../constants/colors';
 
-export default function SummaryTile() {
+export default function SummaryTile({ title, amount, amountColor }) {
   return (
     <View style={styles.container}>
-      <Text>Summary Tile Placeholder</Text>
+      <Text style={styles.title}>{title}</Text>
+      <Text style={[styles.amount, { color: amountColor || GRAY_DARK }]}>
+        ₹{amount}
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: 10,
+    flex: 1,
+    backgroundColor: WHITE,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: BORDER,
+    marginHorizontal: 5,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    elevation: 2,
+  },
+  title: {
+    fontSize: 14,
+    color: GRAY_DARK,
+    opacity: 0.8,
+    marginBottom: 8,
+  },
+  amount: {
+    fontSize: 22,
+    fontWeight: 'bold',
   },
 });
