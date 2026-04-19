@@ -1,0 +1,10 @@
+export const PRIMARY = '#1D9E75';
+export const PRIMARY_LIGHT = '#E1F5EE';
+export const PRIMARY_DARK = '#085041';
+export const DANGER = '#E24B4A';
+export const DANGER_LIGHT = '#FCEBEB';
+export const WHITE = '#FFFFFF';
+export const GRAY_LIGHT = '#F1EFE8';
+export const GRAY_MID = '#888780';
+export const GRAY_DARK = '#2C2C2A';
+export const BORDER = '#e0e0e0';
