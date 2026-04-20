@@ -1,67 +1,215 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  FlatList, 
+  TouchableOpacity, 
+  ScrollView 
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { PRIMARY_LIGHT, GRAY_DARK, WHITE, BORDER } from '../constants/colors';
+import { useFocusEffect } from '@react-navigation/native';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
+import Icon from 'react-native-vector-icons/Ionicons';
+import { PRIMARY_LIGHT, GRAY_DARK, PRIMARY, WHITE, BORDER, DANGER } from '../constants/colors';
 import { STRINGS } from '../constants/strings';
+import { getEntriesByMonth, getAllCustomers } from '../storage/storage';
+import { getMonthSales, getMonthExpense, getNetProfit, getTotalUdhaarPending, formatINR } from '../utils/calculations';
+import EntryCard from '../components/EntryCard';
 
 export default function MahinaScreen() {
+  const [currentDate, setCurrentDate] = useState(new Date());
+  
+  const [sales, setSales] = useState(0);
+  const [expense, setExpense] = useState(0);
+  const [netProfit, setNetProfit] = useState(0);
+  const [udhaar, setUdhaar] = useState(0);
+  
+  const [entries, setEntries] = useState([]);
+
+  const monthYearString = currentDate.toISOString().slice(0, 7); // YYYY-MM
+  
+  const loadMonthData = async () => {
+    // Entries for selected month
+    const monthEntries = await getEntriesByMonth(monthYearString);
+    monthEntries.sort((a, b) => new Date(b.date) - new Date(a.date));
+    setEntries(monthEntries);
+
+    setSales(getMonthSales(monthEntries, monthYearString));
+    setExpense(getMonthExpense(monthEntries, monthYearString));
+    setNetProfit(getNetProfit(monthEntries, monthYearString));
+
+    // Udhaar is global, but the prompt says show it here too
+    const allCustomers = await getAllCustomers();
+    setUdhaar(getTotalUdhaarPending(allCustomers));
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadMonthData();
+    }, [monthYearString])
+  );
+
+  const prevMonth = () => {
+    const d = new Date(currentDate);
+    d.setMonth(d.getMonth() - 1);
+    setCurrentDate(d);
+  };
+
+  const nextMonth = () => {
+    const d = new Date(currentDate);
+    d.setMonth(d.getMonth() + 1);
+    setCurrentDate(d);
+  };
+
+  const displayMonthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const headerMonthText = `${displayMonthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+
+  const handleWhatsAppShare = async () => {
+    const textToShare = `DukaanDost — ${headerMonthText} ka Hisaab\n————————————\nKul Bikri: ${formatINR(sales)}\nKul Kharcha: ${formatINR(expense)}\nUdhaar Baaki: ${formatINR(udhaar)}\nNet Fayda: ${formatINR(netProfit)}\n————————————\nDukaanDost app se bheja gaya`;
+    
+    // expo-sharing is mostly for files. For text to WhatsApp on Android, Sharing.shareAsync with a text file works, or we can use pure react-native Share.
+    // Let's create a temporary text file since the prompt requires using expo-sharing.
+    const fileUri = FileSystem.documentDirectory + 'hisaab.txt';
+    await FileSystem.writeAsStringAsync(fileUri, textToShare);
+    
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(fileUri, { dialogTitle: 'Share Hisaab' });
+    }
+  };
+
+  // Group entries by date
+  const groupedEntries = [];
+  let currentGroupDate = null;
+  
+  entries.forEach(entry => {
+    const d = new Date(entry.date);
+    const dateStr = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'long' });
+    
+    if (dateStr !== currentGroupDate) {
+      groupedEntries.push({ type: 'header', title: dateStr, id: `header_${entry.id}` });
+      currentGroupDate = dateStr;
+    }
+    groupedEntries.push({ type: 'item', data: entry, id: entry.id });
+  });
+
+  const renderItem = ({ item }) => {
+    if (item.type === 'header') {
+      return <Text style={styles.dateHeader}>{item.title}</Text>;
+    }
+    return <EntryCard entry={item.data} />;
+  };
+
+  const totalActions = sales + expense;
+  const salesRatio = totalActions === 0 ? 50 : Math.max(5, (sales / totalActions) * 100);
+  const expenseRatio = totalActions === 0 ? 50 : Math.max(5, (expense / totalActions) * 100);
+
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>{STRINGS.MONTH_SUMMARY.hi}</Text>
+      {/* Month Selector */}
+      <View style={styles.monthSelector}>
+        <TouchableOpacity style={styles.arrowBtn} onPress={prevMonth}>
+          <Icon name="chevron-back" size={24} color={GRAY_DARK} />
+        </TouchableOpacity>
+        <Text style={styles.monthText}>{headerMonthText}</Text>
+        <TouchableOpacity style={styles.arrowBtn} onPress={nextMonth}>
+          <Icon name="chevron-forward" size={24} color={GRAY_DARK} />
+        </TouchableOpacity>
       </View>
-      <View style={styles.content}>
-        <Image 
-          source={require('../../public/DukaanDost-logo.png')} 
-          style={styles.logo} 
-          resizeMode="contain" 
-        />
-        <Text style={styles.tagline}>Aapki dukaan ka sabse accha dost.</Text>
-        <Text style={styles.subtext}>Monthly analytics coming soon...</Text>
+
+      <FlatList
+        data={groupedEntries}
+        keyExtractor={item => item.id}
+        renderItem={renderItem}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
+        ListHeaderComponent={
+          <>
+            {/* 2x2 Grid */}
+            <View style={styles.grid}>
+              <View style={styles.row}>
+                 <View style={styles.tile}>
+                   <Text style={styles.tileTitle}>{STRINGS.TOTAL_SALES.hi}</Text>
+                   <Text style={[styles.tileAmount, {color: PRIMARY}]}>{formatINR(sales)}</Text>
+                 </View>
+                 <View style={styles.tile}>
+                   <Text style={styles.tileTitle}>{STRINGS.TOTAL_EXPENSE.hi}</Text>
+                   <Text style={[styles.tileAmount, {color: DANGER}]}>{formatINR(expense)}</Text>
+                 </View>
+              </View>
+              <View style={styles.row}>
+                 <View style={styles.tile}>
+                   <Text style={styles.tileTitle}>{STRINGS.UDHAAR_PENDING.hi}</Text>
+                   <Text style={[styles.tileAmount, {color: DANGER}]}>{formatINR(udhaar)}</Text>
+                 </View>
+                 <View style={[styles.tile, styles.netProfitTile]}>
+                   <Text style={styles.tileTitle}>{STRINGS.NET_PROFIT.hi}</Text>
+                   <Text style={[styles.tileAmount, {color: PRIMARY}]}>{formatINR(netProfit)}</Text>
+                 </View>
+              </View>
+            </View>
+
+            {/* Ratio Bar */}
+            <View style={styles.ratioContainer}>
+              <View style={styles.ratioLabels}>
+                <Text style={{fontSize: 12, color: GRAY_DARK, fontWeight: 'bold'}}>Bikri</Text>
+                <Text style={{fontSize: 12, color: GRAY_DARK, fontWeight: 'bold'}}>Kharcha</Text>
+              </View>
+              <View style={styles.ratioBar}>
+                <View style={[styles.ratioGreen, { flex: salesRatio }]} />
+                <View style={[styles.ratioRed, { flex: expenseRatio }]} />
+              </View>
+            </View>
+
+            <Text style={styles.sectionTitle}>Breakdown</Text>
+          </>
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>Is mahine ka koi hisaab nahi mila</Text>
+            <Text style={styles.emptySubtext}>Hisaab screen se entries add karo</Text>
+          </View>
+        }
+      />
+
+      <View style={styles.shareContainer}>
+        <TouchableOpacity style={styles.shareBtn} onPress={handleWhatsAppShare}>
+          <Icon name="logo-whatsapp" size={24} color={WHITE} style={{marginRight: 8}} />
+          <Text style={styles.shareBtnText}>WhatsApp pe Share Karo</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: PRIMARY_LIGHT,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: WHITE,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: GRAY_DARK,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  logo: {
-    width: 80,
-    height: 80,
-    marginBottom: 20,
-    borderRadius: 16,
-  },
-  tagline: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: GRAY_DARK,
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  subtext: {
-    fontSize: 16,
-    color: GRAY_DARK,
-    opacity: 0.7,
-  },
+  container: { flex: 1, backgroundColor: PRIMARY_LIGHT },
+  monthSelector: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: WHITE, borderBottomWidth: 1, borderBottomColor: BORDER },
+  arrowBtn: { padding: 8, backgroundColor: PRIMARY_LIGHT, borderRadius: 8 },
+  monthText: { fontSize: 18, fontWeight: 'bold', color: GRAY_DARK },
+  
+  grid: { marginTop: 16 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
+  tile: { flex: 1, backgroundColor: WHITE, padding: 16, borderRadius: 12, borderWidth: 0.5, borderColor: BORDER, marginHorizontal: 4, alignItems: 'center' },
+  netProfitTile: { backgroundColor: '#E1F5EE', borderColor: PRIMARY, borderWidth: 1 },
+  tileTitle: { fontSize: 12, color: GRAY_DARK, fontWeight: 'bold', marginBottom: 4 },
+  tileAmount: { fontSize: 18, fontWeight: '900' },
+  
+  ratioContainer: { marginVertical: 20, paddingHorizontal: 4 },
+  ratioLabels: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
+  ratioBar: { flexDirection: 'row', height: 12, borderRadius: 6, overflow: 'hidden' },
+  ratioGreen: { backgroundColor: PRIMARY },
+  ratioRed: { backgroundColor: DANGER },
+
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: GRAY_DARK, marginBottom: 12, marginTop: 10 },
+  dateHeader: { fontSize: 14, fontWeight: 'bold', color: GRAY_DARK, opacity: 0.6, marginTop: 16, marginBottom: 8, paddingHorizontal: 4 },
+  
+  emptyContainer: { alignItems: 'center', marginTop: 40 },
+  emptyText: { fontSize: 16, color: GRAY_DARK, fontWeight: 'bold' },
+  emptySubtext: { fontSize: 14, color: GRAY_DARK, opacity: 0.6, marginTop: 4 },
+
+  shareContainer: { position: 'absolute', bottom: 20, left: 16, right: 16 },
+  shareBtn: { backgroundColor: '#25D366', flexDirection: 'row', height: 52, borderRadius: 26, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, elevation: 4 },
+  shareBtnText: { color: WHITE, fontSize: 16, fontWeight: 'bold' }
 });
