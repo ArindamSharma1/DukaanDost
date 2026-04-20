@@ -230,10 +230,11 @@ export default function UdhaarScreen() {
 
       {/* Naya Udhaar Modal */}
       <Modal visible={isNayaModalVisible} transparent animationType="slide">
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalDragHandle} />
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={Keyboard.dismiss}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalContent}>
+                <View style={styles.modalDragHandle} />
               <Text style={styles.modalTitle}>+ Naya Udhaar Add Karo</Text>
               
               <TextInput style={styles.input} placeholder="Customer Name" value={newCustName} onChangeText={setNewCustName} placeholderTextColor={GRAY_DARK}/>
@@ -249,9 +250,10 @@ export default function UdhaarScreen() {
                   <Text style={styles.modalSaveText}>Save</Text>
                 </TouchableOpacity>
               </View>
-            </View>
+              </View>
+            </TouchableWithoutFeedback>
           </KeyboardAvoidingView>
-        </TouchableWithoutFeedback>
+        </TouchableOpacity>
       </Modal>
 
       {/* Customer Detail Modal */}

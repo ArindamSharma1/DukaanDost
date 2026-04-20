@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { WHITE, GRAY_DARK, PRIMARY, DANGER, BORDER } from '../constants/colors';
 import { formatINR } from '../utils/calculations';
+import Icon from 'react-native-vector-icons/Ionicons';
 
-export default function EntryCard({ entry }) {
+export default function EntryCard({ entry, onDelete }) {
   const isSale = entry.type === 'sale';
   const isUdhaar = entry.type === 'udhaar';
   
@@ -21,7 +22,7 @@ export default function EntryCard({ entry }) {
           {new Date(entry.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
         </Text>
       </View>
-      <View style={styles.rightInfo}>
+      <View style={styles.rightContainer}>
         <View style={styles.amountContainer}>
           {isUdhaar && (
             <View style={styles.udhaarBadge}>
@@ -32,6 +33,11 @@ export default function EntryCard({ entry }) {
             {sign}{formatINR(entry.amount)}
           </Text>
         </View>
+        {onDelete && (
+          <TouchableOpacity onPress={onDelete} style={styles.deleteBtn}>
+            <Icon name="trash-outline" size={20} color={DANGER} />
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -63,8 +69,9 @@ const styles = StyleSheet.create({
     color: GRAY_DARK,
     opacity: 0.6,
   },
-  rightInfo: {
-    alignItems: 'flex-end',
+  rightContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   amountContainer: {
     flexDirection: 'row',
@@ -86,5 +93,9 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
     textTransform: 'uppercase',
+  },
+  deleteBtn: {
+    marginLeft: 12,
+    padding: 4,
   }
 });

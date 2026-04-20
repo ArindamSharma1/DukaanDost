@@ -17,7 +17,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PRIMARY, PRIMARY_LIGHT, DANGER, WHITE, GRAY_DARK, GRAY_LIGHT, BORDER } from '../constants/colors';
 import { STRINGS } from '../constants/strings';
-import { getAllEntries, saveEntry, getAllCustomers, saveCustomer } from '../storage/storage';
+import { getAllEntries, saveEntry, getAllCustomers, saveCustomer, deleteEntry } from '../storage/storage';
 import { getTodayTotal, getTodayExpense, formatINR } from '../utils/calculations';
 import SummaryTile from '../components/SummaryTile';
 import EntryCard from '../components/EntryCard';
@@ -104,6 +104,11 @@ export default function HisaabScreen() {
     setPaymentType('cash');
   };
 
+  const handleDelete = async (id) => {
+    await deleteEntry(id);
+    loadData();
+  };
+
   const openModal = (type) => {
     setEntryType(type);
     resetModal();
@@ -144,7 +149,7 @@ export default function HisaabScreen() {
         <FlatList
           data={entries}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <EntryCard entry={item} />}
+          renderItem={({ item }) => <EntryCard entry={item} onDelete={() => handleDelete(item.id)} />}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 120 }}
           ListFooterComponent={renderListFooter}
@@ -171,12 +176,10 @@ export default function HisaabScreen() {
       </View>
 
       <Modal visible={isModalVisible} transparent animationType="slide">
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <KeyboardAvoidingView 
-            style={styles.modalOverlay}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          >
-            <View style={styles.modalContent}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={Keyboard.dismiss}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalContent}>
               <View style={styles.modalDragHandle} />
               <Text style={styles.modalTitle}>
                 {entryType === 'sale' ? '+ Bikri Add Karo' : '+ Kharcha Add Karo'}
@@ -237,9 +240,10 @@ export default function HisaabScreen() {
                   <Text style={styles.modalSaveText}>Save Karo</Text>
                 </TouchableOpacity>
               </View>
-            </View>
+              </View>
+            </TouchableWithoutFeedback>
           </KeyboardAvoidingView>
-        </TouchableWithoutFeedback>
+        </TouchableOpacity>
       </Modal>
 
     </SafeAreaView>

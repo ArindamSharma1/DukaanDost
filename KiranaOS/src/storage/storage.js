@@ -13,6 +13,16 @@ export const saveEntry = async (entry) => {
   }
 };
 
+export const deleteEntry = async (id) => {
+  try {
+    const existing = await getAllEntries();
+    const updated = existing.filter(e => e.id !== id);
+    await AsyncStorage.setItem(ENTRIES_KEY, JSON.stringify(updated));
+  } catch (error) {
+    console.error('Error deleting entry:', error);
+  }
+};
+
 export const getAllEntries = async () => {
   try {
     const data = await AsyncStorage.getItem(ENTRIES_KEY);
