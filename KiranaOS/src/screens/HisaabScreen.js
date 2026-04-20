@@ -186,9 +186,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: GRAY_DARK, // Using Dukaan Black
+    fontSize: 24,
+    fontWeight: '900',
+    color: GRAY_DARK, // Dukaan Black
+    letterSpacing: -0.5,
   },
   summaryContainer: {
     flexDirection: 'row',
@@ -221,9 +222,9 @@ const styles = StyleSheet.create({
   },
   fab: {
     flex: 1,
-    paddingVertical: 15,
-    marginHorizontal: 5,
-    borderRadius: 12,
+    paddingVertical: 16,
+    marginHorizontal: 8,
+    borderRadius: 30, // pill shaped
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -257,7 +258,7 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: BORDER,
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 12,
     fontSize: 16,
     marginBottom: 15,
@@ -274,7 +275,7 @@ const styles = StyleSheet.create({
     padding: 15,
     alignItems: 'center',
     backgroundColor: GRAY_LIGHT,
-    borderRadius: 8,
+    borderRadius: 12,
     marginRight: 10,
   },
   modalCancelText: {
@@ -286,7 +287,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 15,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: 12,
   },
   modalSaveText: {
     color: WHITE,
