@@ -9,9 +9,11 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
-  TouchableWithoutFeedback,
-  Keyboard
+  Pressable,
+  Keyboard,
+  Linking
 } from 'react-native';
+import Icon from '@expo/vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { PRIMARY_LIGHT, GRAY_DARK, PRIMARY, WHITE, BORDER, DANGER, GRAY_LIGHT } from '../constants/colors';
@@ -19,16 +21,23 @@ import { STRINGS } from '../constants/strings';
 import { useLanguage } from '../context/LanguageContext';
 import { getAllCustomers, saveCustomer, updateCustomer, saveEntry, getAllEntries } from '../storage/storage';
 import { getTotalUdhaarPending, formatINR } from '../utils/calculations';
+import { useSettings } from '../context/SettingsContext';
+import EntryCard from '../components/EntryCard';
+import PaymentQRModal from '../components/PaymentQRModal';
+import { generateReceipt } from '../utils/ReceiptService';
 
 export default function UdhaarScreen() {
   const [customers, setCustomers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [totalPending, setTotalPending] = useState(0);
   const { language } = useLanguage();
+  const { shopDetails } = useSettings();
 
   // Modals state
   const [isNayaModalVisible, setNayaModalVisible] = useState(false);
   const [isDetailModalVisible, setDetailModalVisible] = useState(false);
+  const [isQRModalVisible, setQRModalVisible] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState(null);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [customerLedger, setCustomerLedger] = useState([]);
 
@@ -157,6 +166,30 @@ export default function UdhaarScreen() {
 
   const filteredCustomers = customers.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
+  const sendReminder = (customer) => {
+    if (customer.totalUdhaar <= 0) return;
+    
+    const message = `Namaste ${customer.name}, aapka ${formatINR(customer.totalUdhaar)} ka udhaar ${shopDetails.name} par baaki hai. Kripya jald jama karayein. Dhanyawad!`;
+    const url = `whatsapp://send?text=${encodeURIComponent(message)}${customer.phone ? `&phone=91${customer.phone}` : ''}`;
+    
+    Linking.canOpenURL(url).then(supported => {
+      if (supported) {
+        Linking.openURL(url);
+      } else {
+        alert("WhatsApp is not installed");
+      }
+    });
+  };
+
+  const handleShowQR = (entry) => {
+    setSelectedEntry(entry);
+    setQRModalVisible(true);
+  };
+
+  const handleShare = async (entry) => {
+    await generateReceipt(entry, shopDetails);
+  };
+
   const renderCustomerCard = ({ item }) => {
     const isPaid = item.totalUdhaar <= 0;
     const initials = item.name.substring(0, 2).toUpperCase();
@@ -183,6 +216,17 @@ export default function UdhaarScreen() {
                {isPaid ? 'Paid ✓' : 'Baaki'}
              </Text>
           </View>
+          {!isPaid && (
+            <TouchableOpacity 
+              style={styles.reminderBtn} 
+              onPress={(e) => {
+                e.stopPropagation();
+                sendReminder(item);
+              }}
+            >
+              <Icon name="logo-whatsapp" size={20} color="#25D366" />
+            </TouchableOpacity>
+          )}
         </View>
       </TouchableOpacity>
     );
@@ -232,9 +276,9 @@ export default function UdhaarScreen() {
 
       {/* Naya Udhaar Modal */}
       <Modal visible={isNayaModalVisible} transparent animationType="slide">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={Keyboard.dismiss}>
+        <Pressable style={styles.modalOverlay} onPress={Keyboard.dismiss}>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-            <TouchableWithoutFeedback>
+            <Pressable>
               <View style={styles.modalContent}>
                 <View style={styles.modalDragHandle} />
               <Text style={styles.modalTitle}>+ Naya Udhaar Add Karo</Text>
@@ -253,9 +297,9 @@ export default function UdhaarScreen() {
                 </TouchableOpacity>
               </View>
               </View>
-            </TouchableWithoutFeedback>
+            </Pressable>
           </KeyboardAvoidingView>
-        </TouchableOpacity>
+        </Pressable>
       </Modal>
 
       {/* Customer Detail Modal */}
@@ -278,13 +322,11 @@ export default function UdhaarScreen() {
                 data={customerLedger}
                 keyExtractor={(item) => item.id}
                 renderItem={({item}) => (
-                  <View style={styles.historyCard}>
-                     <Text style={styles.historyLabel}>{item.label}</Text>
-                     <Text style={styles.historyTime}>{new Date(item.date).toLocaleDateString()}</Text>
-                     <Text style={[styles.historyAmount, { color: item.type === 'sale' ? PRIMARY : DANGER }]}>
-                        {item.type === 'sale' ? '' : '- '}{formatINR(item.amount)}
-                     </Text>
-                  </View>
+                  <EntryCard 
+                    entry={item} 
+                    onShowQR={handleShowQR}
+                    onShare={handleShare}
+                  />
                 )}
                 ListEmptyComponent={<Text style={styles.historyEmpty}>No history found.</Text>}
                 style={styles.historyList}
@@ -308,6 +350,19 @@ export default function UdhaarScreen() {
         </View>
       </Modal>
 
+      {/* QR Code Modal */}
+      {selectedEntry && (
+        <PaymentQRModal
+          visible={isQRModalVisible}
+          onClose={() => setQRModalVisible(false)}
+          amount={selectedEntry.amount}
+          label={selectedEntry.label}
+          upiId={shopDetails.upiId}
+          shopName={shopDetails.name}
+          entryId={selectedEntry.id}
+        />
+      )}
+
     </SafeAreaView>
   );
 }
@@ -330,11 +385,19 @@ const styles = StyleSheet.create({
   amount: { fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
   badge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
   badgeText: { fontSize: 10, fontWeight: 'bold' },
+  reminderBtn: {
+    marginTop: 8,
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: '#E8F9EE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   emptyContainer: { alignItems: 'center', marginTop: 60 },
   emptyBox: { width: 80, height: 80, borderWidth: 2, borderColor: BORDER, borderStyle: 'dashed', borderRadius: 16, marginBottom: 16 },
   emptyTitle: { fontSize: 18, color: GRAY_DARK, fontWeight: 'bold', marginBottom: 8 },
   emptySubtext: { fontSize: 14, color: GRAY_DARK, opacity: 0.6 },
-  fab: { position: 'absolute', bottom: 20, right: 20, backgroundColor: PRIMARY, height: 56, borderRadius: 28, paddingHorizontal: 24, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, elevation: 4 },
+  fab: { position: 'absolute', bottom: 20, right: 20, backgroundColor: PRIMARY, height: 56, borderRadius: 28, paddingHorizontal: 24, justifyContent: 'center', alignItems: 'center', boxShadow: '0 3 4 rgba(0,0,0,0.2)', elevation: 4 },
   fabText: { color: WHITE, fontSize: 16, fontWeight: 'bold' },
   
   // Modals Global

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -10,7 +10,7 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
-  TouchableWithoutFeedback,
+  Pressable,
   Keyboard
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -23,6 +23,9 @@ import { getAllEntries, saveEntry, getAllCustomers, saveCustomer, deleteEntry } 
 import { getTodayTotal, getTodayExpense, formatINR } from '../utils/calculations';
 import SummaryTile from '../components/SummaryTile';
 import EntryCard from '../components/EntryCard';
+import PaymentQRModal from '../components/PaymentQRModal';
+import { useSettings } from '../context/SettingsContext';
+import { generateReceipt } from '../utils/ReceiptService';
 
 export default function HisaabScreen() {
   const [entries, setEntries] = useState([]);
@@ -36,7 +39,20 @@ export default function HisaabScreen() {
   const [paymentType, setPaymentType] = useState('cash'); // 'cash' | 'udhaar'
   const [customerName, setCustomerName] = useState('');
   const [isLangModalVisible, setLangModalVisible] = useState(false);
+  const [isSettingsModalVisible, setSettingsModalVisible] = useState(false);
+  const [isQRModalVisible, setQRModalVisible] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState(null);
+  
   const { language, changeLanguage } = useLanguage();
+  const { shopDetails, updateSettings } = useSettings();
+  
+  const [tempShopName, setTempShopName] = useState(shopDetails.name);
+  const [tempUpiId, setTempUpiId] = useState(shopDetails.upiId);
+
+  useEffect(() => {
+    setTempShopName(shopDetails.name);
+    setTempUpiId(shopDetails.upiId);
+  }, [shopDetails]);
 
   const loadData = async () => {
     const data = await getAllEntries();
@@ -119,6 +135,20 @@ export default function HisaabScreen() {
     setModalVisible(true);
   };
 
+  const handleShowQR = (entry) => {
+    setSelectedEntry(entry);
+    setQRModalVisible(true);
+  };
+
+  const handleShare = async (entry) => {
+    await generateReceipt(entry, shopDetails);
+  };
+
+  const handleSaveSettings = async () => {
+    await updateSettings({ name: tempShopName, upiId: tempUpiId });
+    setSettingsModalVisible(false);
+  };
+
   const renderListFooter = () => {
     if (entries.length === 0) return null;
     return <Text style={styles.endOfListText}>Aaj ke saare entries dikha diye ✓</Text>;
@@ -133,12 +163,20 @@ export default function HisaabScreen() {
           resizeMode="contain" 
         />
         <Text style={styles.headerTitle}>DukaanBook</Text>
-        <TouchableOpacity 
-          style={styles.langSelector} 
-          onPress={() => setLangModalVisible(true)}
-        >
-          <Icon name="language" size={24} color={PRIMARY} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row' }}>
+          <TouchableOpacity 
+            style={[styles.langSelector, { marginRight: 8 }]} 
+            onPress={() => setSettingsModalVisible(true)}
+          >
+            <Icon name="settings-outline" size={24} color={PRIMARY} />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.langSelector} 
+            onPress={() => setLangModalVisible(true)}
+          >
+            <Icon name="globe-outline" size={24} color={PRIMARY} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.summaryContainer}>
@@ -159,7 +197,14 @@ export default function HisaabScreen() {
         <FlatList
           data={entries}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <EntryCard entry={item} onDelete={() => handleDelete(item.id)} />}
+          renderItem={({ item }) => (
+            <EntryCard 
+              entry={item} 
+              onDelete={() => handleDelete(item.id)} 
+              onShowQR={handleShowQR}
+              onShare={handleShare}
+            />
+          )}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 120 }}
           ListFooterComponent={renderListFooter}
@@ -186,9 +231,9 @@ export default function HisaabScreen() {
       </View>
 
       <Modal visible={isModalVisible} transparent animationType="slide">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={Keyboard.dismiss}>
+        <Pressable style={styles.modalOverlay} onPress={Keyboard.dismiss}>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-            <TouchableWithoutFeedback>
+            <Pressable>
               <View style={styles.modalContent}>
               <View style={styles.modalDragHandle} />
               <Text style={styles.modalTitle}>
@@ -251,12 +296,65 @@ export default function HisaabScreen() {
                 </TouchableOpacity>
               </View>
               </View>
-            </TouchableWithoutFeedback>
+            </Pressable>
           </KeyboardAvoidingView>
-        </TouchableOpacity>
+        </Pressable>
       </Modal>
 
 
+
+      {/* Settings Modal */}
+      <Modal visible={isSettingsModalVisible} transparent animationType="slide">
+        <Pressable style={styles.modalOverlay} onPress={Keyboard.dismiss}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <Pressable>
+              <View style={styles.modalContent}>
+                <View style={styles.modalDragHandle} />
+                <Text style={styles.modalTitle}>Shop Settings</Text>
+                
+                <Text style={styles.inputLabel}>Shop Name</Text>
+                <TextInput
+                  style={styles.input}
+                  value={tempShopName}
+                  onChangeText={setTempShopName}
+                  placeholder="e.g. Sharma Kirana Store"
+                />
+
+                <Text style={styles.inputLabel}>UPI ID (VPA)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={tempUpiId}
+                  onChangeText={setTempUpiId}
+                  placeholder="e.g. sharma.kirana@okicici"
+                  autoCapitalize="none"
+                />
+                
+                <View style={styles.modalActions}>
+                  <TouchableOpacity style={styles.modalCancel} onPress={() => setSettingsModalVisible(false)}>
+                    <Text style={styles.modalCancelText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.modalSave, { backgroundColor: PRIMARY }]} onPress={handleSaveSettings}>
+                    <Text style={styles.modalSaveText}>Save Settings</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Pressable>
+          </KeyboardAvoidingView>
+        </Pressable>
+      </Modal>
+
+      {/* QR Code Modal */}
+      {selectedEntry && (
+        <PaymentQRModal
+          visible={isQRModalVisible}
+          onClose={() => setQRModalVisible(false)}
+          amount={selectedEntry.amount}
+          label={selectedEntry.label}
+          upiId={shopDetails.upiId}
+          shopName={shopDetails.name}
+          entryId={selectedEntry.id}
+        />
+      )}
 
       {/* Language Selection Modal */}
       <Modal visible={isLangModalVisible} transparent animationType="fade">
@@ -379,9 +477,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
+    boxShadow: '0 3 4 rgba(0,0,0,0.2)',
     elevation: 4,
   },
   fabText: {
@@ -416,6 +512,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: GRAY_DARK,
+    opacity: 0.5,
+    marginBottom: 4,
+    marginLeft: 4,
+  },
   input: {
     borderWidth: 1,
     borderColor: BORDER,
@@ -423,6 +527,8 @@ const styles = StyleSheet.create({
     height: 48,
     paddingHorizontal: 12,
     fontSize: 16,
+    boxShadow: '0 2 4 rgba(0,0,0,0.05)',
+    elevation: 2,
     marginBottom: 15,
     color: GRAY_DARK,
   },

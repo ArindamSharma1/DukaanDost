@@ -11,9 +11,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system';
+import { Share } from 'react-native';
 import Icon from '@expo/vector-icons/Ionicons';
-import { PRIMARY_LIGHT, GRAY_DARK, PRIMARY, WHITE, BORDER, DANGER } from '../constants/colors';
+import { PRIMARY_LIGHT, GRAY_DARK, PRIMARY, WHITE, BORDER, DANGER, GRAY_LIGHT } from '../constants/colors';
 import { STRINGS, LANGUAGES } from '../constants/strings';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -74,13 +74,12 @@ export default function MahinaScreen() {
   const handleWhatsAppShare = async () => {
     const textToShare = `DukaanBook — ${headerMonthText} ka Hisaab\n————————————\nKul Bikri: ${formatINR(sales)}\nKul Kharcha: ${formatINR(expense)}\nUdhaar Baaki: ${formatINR(udhaar)}\nNet Fayda: ${formatINR(netProfit)}\n————————————\nDukaanBook app se bheja gaya`;
     
-    // expo-sharing is mostly for files. For text to WhatsApp on Android, Sharing.shareAsync with a text file works, or we can use pure react-native Share.
-    // Let's create a temporary text file since the prompt requires using expo-sharing.
-    const fileUri = FileSystem.documentDirectory + 'hisaab.txt';
-    await FileSystem.writeAsStringAsync(fileUri, textToShare);
-    
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(fileUri, { dialogTitle: 'Share Hisaab' });
+    try {
+      await Share.share({
+        message: textToShare,
+      });
+    } catch (error) {
+      console.error('Error sharing:', error);
     }
   };
 
@@ -122,7 +121,7 @@ export default function MahinaScreen() {
           <Icon name="chevron-forward" size={24} color={GRAY_DARK} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.langSelector} onPress={() => setLangModalVisible(true)}>
-          <Icon name="language" size={24} color={PRIMARY} />
+          <Icon name="globe-outline" size={24} color={PRIMARY} />
         </TouchableOpacity>
       </View>
 
@@ -259,7 +258,7 @@ const styles = StyleSheet.create({
   emptySubtext: { fontSize: 14, color: GRAY_DARK, opacity: 0.6, marginTop: 4 },
 
   shareContainer: { position: 'absolute', bottom: 20, left: 16, right: 16 },
-  shareBtn: { backgroundColor: '#25D366', flexDirection: 'row', height: 52, borderRadius: 26, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, elevation: 4 },
+  shareBtn: { backgroundColor: '#25D366', flexDirection: 'row', height: 52, borderRadius: 26, justifyContent: 'center', alignItems: 'center', boxShadow: '0 3 4 rgba(0,0,0,0.2)', elevation: 4 },
   shareBtnText: { color: WHITE, fontSize: 16, fontWeight: 'bold' },
   langSelector: {
     padding: 8,

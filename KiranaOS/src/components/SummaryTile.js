@@ -23,9 +23,7 @@ const styles = StyleSheet.create({
     borderColor: BORDER,
     marginHorizontal: 5,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    boxShadow: '0 2 4 rgba(0,0,0,0.05)',
     elevation: 2,
   },
   title: {

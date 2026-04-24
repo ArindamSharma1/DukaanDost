@@ -1,12 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { WHITE, GRAY_DARK, PRIMARY, DANGER, BORDER } from '../constants/colors';
+import { WHITE, GRAY_DARK, PRIMARY, DANGER, BORDER, PRIMARY_LIGHT } from '../constants/colors';
 import { formatINR } from '../utils/calculations';
 import Icon from '@expo/vector-icons/Ionicons';
 import { useLanguage } from '../context/LanguageContext';
 import { STRINGS } from '../constants/strings';
 
-export default function EntryCard({ entry, onDelete }) {
+export default function EntryCard({ entry, onDelete, onShowQR, onShare }) {
   const isSale = entry.type === 'sale';
   const isUdhaar = entry.type === 'udhaar';
   const { language } = useLanguage();
@@ -36,11 +36,24 @@ export default function EntryCard({ entry, onDelete }) {
             {sign}{formatINR(entry.amount)}
           </Text>
         </View>
-        {onDelete && (
-          <TouchableOpacity onPress={onDelete} style={styles.deleteBtn}>
-            <Icon name="trash-outline" size={20} color={DANGER} />
+        
+        <View style={styles.actionsContainer}>
+          {(isSale || isUdhaar) && (
+            <TouchableOpacity onPress={() => onShowQR(entry)} style={styles.actionBtn}>
+              <Icon name="qr-code-outline" size={20} color={PRIMARY} />
+            </TouchableOpacity>
+          )}
+          
+          <TouchableOpacity onPress={() => onShare(entry)} style={styles.actionBtn}>
+            <Icon name="share-social-outline" size={20} color={GRAY_DARK} />
           </TouchableOpacity>
-        )}
+
+          {onDelete && (
+            <TouchableOpacity onPress={onDelete} style={[styles.actionBtn, { marginLeft: 4 }]}>
+              <Icon name="trash-outline" size={20} color={DANGER} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     </View>
   );
@@ -97,8 +110,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textTransform: 'uppercase',
   },
-  deleteBtn: {
-    marginLeft: 12,
-    padding: 4,
-  }
+  actionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 15,
+  },
+  actionBtn: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: PRIMARY_LIGHT,
+    marginLeft: 6,
+  },
 });

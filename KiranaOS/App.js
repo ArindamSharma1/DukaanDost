@@ -9,6 +9,7 @@ import HisaabScreen from './src/screens/HisaabScreen';
 import UdhaarScreen from './src/screens/UdhaarScreen';
 import MahinaScreen from './src/screens/MahinaScreen';
 import { LanguageProvider } from './src/context/LanguageContext';
+import { SettingsProvider } from './src/context/SettingsContext';
 
 import { PRIMARY, GRAY_MID, WHITE, BORDER, GRAY_DARK } from './src/constants/colors';
 
@@ -48,8 +49,8 @@ export default function App() {
   }
 
   return (
-    <>
-    <LanguageProvider>
+    <SettingsProvider>
+      <LanguageProvider>
       <NavigationContainer>
         <Tab.Navigator
           screenOptions={({ route }) => ({
@@ -81,7 +82,7 @@ export default function App() {
           <Tab.Screen name="Mahina" component={MahinaScreen} />
         </Tab.Navigator>
       </NavigationContainer>
-    </LanguageProvider>
+
 
       <Modal visible={showWelcome} animationType="fade">
         <View style={styles.welcomeContainer}>
@@ -94,7 +95,8 @@ export default function App() {
            </TouchableOpacity>
         </View>
       </Modal>
-    </>
+    </LanguageProvider>
+    </SettingsProvider>
   );
 }
 
@@ -140,9 +142,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     width: '100%',
     alignItems: 'center',
-    shadowColor: PRIMARY,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    boxShadow: '0 4 6 rgba(29, 158, 117, 0.3)',
     elevation: 5
   },
   startBtnText: {
