@@ -1,5 +1,6 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { Platform } from 'react-native';
 import { formatINR } from '../utils/calculations';
 
 export const generateReceipt = async (entry, shopDetails) => {
@@ -63,9 +64,22 @@ export const generateReceipt = async (entry, shopDetails) => {
     </html>
   `;
 
+  if (Platform.OS === 'web') {
+    try {
+      await Print.printAsync({ html });
+    } catch (error) {
+      console.error('Error printing receipt:', error);
+    }
+    return;
+  }
+
   try {
-    const { uri } = await Print.printToFileAsync({ html });
-    await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+    const result = await Print.printToFileAsync({ html });
+    if (result && result.uri) {
+      await Sharing.shareAsync(result.uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+    } else {
+      console.error('Error: printToFileAsync returned no URI');
+    }
   } catch (error) {
     console.error('Error generating receipt:', error);
   }
