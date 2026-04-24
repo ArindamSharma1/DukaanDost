@@ -86,8 +86,8 @@ export default function App() {
 
       <Modal visible={showWelcome} animationType="fade">
         <View style={styles.welcomeContainer}>
-           <Image source={require('./public/DukaanBook-logo.png')} style={styles.logo} resizeMode="contain" />
-           <Text style={styles.welcomeTitle}>DukaanBook mein aapka swagat hai!</Text>
+           <Image source={require('./public/DukaanDost-logo.png')} style={styles.logo} resizeMode="contain" />
+           <Text style={styles.welcomeTitle}>DukaanDost mein aapka swagat hai!</Text>
            <Text style={styles.welcomeSubtitle}>Aapki dukaan ka sabse accha dost</Text>
            
            <TouchableOpacity style={styles.startButton} onPress={handleStart}>
