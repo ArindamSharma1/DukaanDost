@@ -2,11 +2,14 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { WHITE, GRAY_DARK, PRIMARY, DANGER, BORDER } from '../constants/colors';
 import { formatINR } from '../utils/calculations';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from '@expo/vector-icons/Ionicons';
+import { useLanguage } from '../context/LanguageContext';
+import { STRINGS } from '../constants/strings';
 
 export default function EntryCard({ entry, onDelete }) {
   const isSale = entry.type === 'sale';
   const isUdhaar = entry.type === 'udhaar';
+  const { language } = useLanguage();
   
   const amountColor = isSale ? PRIMARY : DANGER;
   const sign = isSale || isUdhaar ? '' : '- ';
@@ -26,7 +29,7 @@ export default function EntryCard({ entry, onDelete }) {
         <View style={styles.amountContainer}>
           {isUdhaar && (
             <View style={styles.udhaarBadge}>
-              <Text style={styles.udhaarText}>Udhaar</Text>
+              <Text style={styles.udhaarText}>{STRINGS.CREDIT[language]}</Text>
             </View>
           )}
           <Text style={[styles.amount, { color: amountColor }]}>

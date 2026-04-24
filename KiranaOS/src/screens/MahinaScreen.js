@@ -2,18 +2,21 @@ import React, { useState, useCallback } from 'react';
 import { 
   View, 
   Text, 
-  StyleSheet, 
-  FlatList, 
+  StyleSheet,
   TouchableOpacity, 
-  ScrollView 
+  ScrollView,
+  Modal,
+  FlatList
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from '@expo/vector-icons/Ionicons';
 import { PRIMARY_LIGHT, GRAY_DARK, PRIMARY, WHITE, BORDER, DANGER } from '../constants/colors';
-import { STRINGS } from '../constants/strings';
+import { STRINGS, LANGUAGES } from '../constants/strings';
+import { useLanguage } from '../context/LanguageContext';
+
 import { getEntriesByMonth, getAllCustomers } from '../storage/storage';
 import { getMonthSales, getMonthExpense, getNetProfit, getTotalUdhaarPending, formatINR } from '../utils/calculations';
 import EntryCard from '../components/EntryCard';
@@ -27,6 +30,8 @@ export default function MahinaScreen() {
   const [udhaar, setUdhaar] = useState(0);
   
   const [entries, setEntries] = useState([]);
+  const [isLangModalVisible, setLangModalVisible] = useState(false);
+  const { language, changeLanguage } = useLanguage();
 
   const monthYearString = currentDate.toISOString().slice(0, 7); // YYYY-MM
   
@@ -67,7 +72,7 @@ export default function MahinaScreen() {
   const headerMonthText = `${displayMonthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
 
   const handleWhatsAppShare = async () => {
-    const textToShare = `DukaanDost — ${headerMonthText} ka Hisaab\n————————————\nKul Bikri: ${formatINR(sales)}\nKul Kharcha: ${formatINR(expense)}\nUdhaar Baaki: ${formatINR(udhaar)}\nNet Fayda: ${formatINR(netProfit)}\n————————————\nDukaanDost app se bheja gaya`;
+    const textToShare = `DukaanBook — ${headerMonthText} ka Hisaab\n————————————\nKul Bikri: ${formatINR(sales)}\nKul Kharcha: ${formatINR(expense)}\nUdhaar Baaki: ${formatINR(udhaar)}\nNet Fayda: ${formatINR(netProfit)}\n————————————\nDukaanBook app se bheja gaya`;
     
     // expo-sharing is mostly for files. For text to WhatsApp on Android, Sharing.shareAsync with a text file works, or we can use pure react-native Share.
     // Let's create a temporary text file since the prompt requires using expo-sharing.
@@ -116,6 +121,9 @@ export default function MahinaScreen() {
         <TouchableOpacity style={styles.arrowBtn} onPress={nextMonth}>
           <Icon name="chevron-forward" size={24} color={GRAY_DARK} />
         </TouchableOpacity>
+        <TouchableOpacity style={styles.langSelector} onPress={() => setLangModalVisible(true)}>
+          <Icon name="language" size={24} color={PRIMARY} />
+        </TouchableOpacity>
       </View>
 
       <FlatList
@@ -130,21 +138,21 @@ export default function MahinaScreen() {
             <View style={styles.grid}>
               <View style={styles.row}>
                  <View style={styles.tile}>
-                   <Text style={styles.tileTitle}>{STRINGS.TOTAL_SALES.hi}</Text>
+                   <Text style={styles.tileTitle}>{STRINGS.TOTAL_SALES[language]}</Text>
                    <Text style={[styles.tileAmount, {color: PRIMARY}]}>{formatINR(sales)}</Text>
                  </View>
                  <View style={styles.tile}>
-                   <Text style={styles.tileTitle}>{STRINGS.TOTAL_EXPENSE.hi}</Text>
+                   <Text style={styles.tileTitle}>{STRINGS.TOTAL_EXPENSE[language]}</Text>
                    <Text style={[styles.tileAmount, {color: DANGER}]}>{formatINR(expense)}</Text>
                  </View>
               </View>
               <View style={styles.row}>
                  <View style={styles.tile}>
-                   <Text style={styles.tileTitle}>{STRINGS.UDHAAR_PENDING.hi}</Text>
+                   <Text style={styles.tileTitle}>{STRINGS.UDHAAR_PENDING[language]}</Text>
                    <Text style={[styles.tileAmount, {color: DANGER}]}>{formatINR(udhaar)}</Text>
                  </View>
                  <View style={[styles.tile, styles.netProfitTile]}>
-                   <Text style={styles.tileTitle}>{STRINGS.NET_PROFIT.hi}</Text>
+                   <Text style={styles.tileTitle}>{STRINGS.NET_PROFIT[language]}</Text>
                    <Text style={[styles.tileAmount, {color: PRIMARY}]}>{formatINR(netProfit)}</Text>
                  </View>
               </View>
@@ -179,6 +187,47 @@ export default function MahinaScreen() {
           <Text style={styles.shareBtnText}>WhatsApp pe Share Karo</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Language Selection Modal */}
+      <Modal visible={isLangModalVisible} transparent animationType="fade">
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => setLangModalVisible(false)}
+        >
+          <View style={[styles.modalContent, { maxHeight: '60%' }]}>
+            <View style={styles.modalDragHandle} />
+            <Text style={styles.modalTitle}>Select Language</Text>
+            <FlatList
+              data={LANGUAGES}
+              keyExtractor={(item) => item.code}
+              renderItem={({ item }) => (
+                <TouchableOpacity 
+                  style={[
+                    styles.langItem, 
+                    language === item.code && styles.langItemActive
+                  ]} 
+                  onPress={() => {
+                    changeLanguage(item.code);
+                    setLangModalVisible(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.langItemText,
+                    language === item.code && styles.langItemTextActive
+                  ]}>
+                    {item.name}
+                  </Text>
+                  {language === item.code && (
+                    <Icon name="checkmark-circle" size={20} color={WHITE} />
+                  )}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -211,5 +260,59 @@ const styles = StyleSheet.create({
 
   shareContainer: { position: 'absolute', bottom: 20, left: 16, right: 16 },
   shareBtn: { backgroundColor: '#25D366', flexDirection: 'row', height: 52, borderRadius: 26, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, elevation: 4 },
-  shareBtnText: { color: WHITE, fontSize: 16, fontWeight: 'bold' }
+  shareBtnText: { color: WHITE, fontSize: 16, fontWeight: 'bold' },
+  langSelector: {
+    padding: 8,
+    borderRadius: 12,
+    backgroundColor: PRIMARY_LIGHT,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)', 
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: WHITE,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  modalDragHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: BORDER,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: GRAY_DARK,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  langItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginBottom: 8,
+    backgroundColor: GRAY_LIGHT,
+  },
+  langItemActive: {
+    backgroundColor: PRIMARY,
+  },
+  langItemText: {
+    fontSize: 16,
+    color: GRAY_DARK,
+    fontWeight: '500',
+  },
+  langItemTextActive: {
+    color: WHITE,
+    fontWeight: 'bold',
+  },
 });

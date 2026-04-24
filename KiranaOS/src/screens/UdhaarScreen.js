@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { PRIMARY_LIGHT, GRAY_DARK, PRIMARY, WHITE, BORDER, DANGER, GRAY_LIGHT } from '../constants/colors';
 import { STRINGS } from '../constants/strings';
+import { useLanguage } from '../context/LanguageContext';
 import { getAllCustomers, saveCustomer, updateCustomer, saveEntry, getAllEntries } from '../storage/storage';
 import { getTotalUdhaarPending, formatINR } from '../utils/calculations';
 
@@ -23,6 +24,7 @@ export default function UdhaarScreen() {
   const [customers, setCustomers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [totalPending, setTotalPending] = useState(0);
+  const { language } = useLanguage();
 
   // Modals state
   const [isNayaModalVisible, setNayaModalVisible] = useState(false);
@@ -198,7 +200,7 @@ export default function UdhaarScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>{STRINGS.UDHAAR_PENDING.hi}</Text>
+          <Text style={styles.headerTitle}>{STRINGS.UDHAAR_PENDING[language]}</Text>
           <Text style={styles.headerAmount}>{formatINR(totalPending)}</Text>
         </View>
       </View>

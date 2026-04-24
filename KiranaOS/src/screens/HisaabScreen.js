@@ -16,7 +16,9 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PRIMARY, PRIMARY_LIGHT, DANGER, WHITE, GRAY_DARK, GRAY_LIGHT, BORDER } from '../constants/colors';
-import { STRINGS } from '../constants/strings';
+import { STRINGS, LANGUAGES } from '../constants/strings';
+import { useLanguage } from '../context/LanguageContext';
+import Icon from '@expo/vector-icons/Ionicons';
 import { getAllEntries, saveEntry, getAllCustomers, saveCustomer, deleteEntry } from '../storage/storage';
 import { getTodayTotal, getTodayExpense, formatINR } from '../utils/calculations';
 import SummaryTile from '../components/SummaryTile';
@@ -33,6 +35,8 @@ export default function HisaabScreen() {
   const [label, setLabel] = useState('');
   const [paymentType, setPaymentType] = useState('cash'); // 'cash' | 'udhaar'
   const [customerName, setCustomerName] = useState('');
+  const [isLangModalVisible, setLangModalVisible] = useState(false);
+  const { language, changeLanguage } = useLanguage();
 
   const loadData = async () => {
     const data = await getAllEntries();
@@ -124,21 +128,27 @@ export default function HisaabScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Image 
-          source={require('../../public/DukaanDost-logo.png')} 
+          source={require('../../public/DukaanBook-logo.png')} 
           style={styles.logo} 
           resizeMode="contain" 
         />
-        <Text style={styles.headerTitle}>DukaanDost</Text>
+        <Text style={styles.headerTitle}>DukaanBook</Text>
+        <TouchableOpacity 
+          style={styles.langSelector} 
+          onPress={() => setLangModalVisible(true)}
+        >
+          <Icon name="language" size={24} color={PRIMARY} />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.summaryContainer}>
         <SummaryTile 
-          title={STRINGS.TOTAL_SALES.hi} 
+          title={STRINGS.TOTAL_SALES[language]} 
           amount={formatINR(todaySales).replace('₹', '')} 
           amountColor={PRIMARY} 
         />
         <SummaryTile 
-          title={STRINGS.TOTAL_EXPENSE.hi} 
+          title={STRINGS.TOTAL_EXPENSE[language]} 
           amount={formatINR(todayExpense).replace('₹', '')} 
           amountColor={DANGER} 
         />
@@ -164,14 +174,14 @@ export default function HisaabScreen() {
           style={[styles.fab, { backgroundColor: DANGER }]} 
           onPress={() => openModal('expense')}
         >
-          <Text style={styles.fabText}>{STRINGS.ADD_EXPENSE.hi}</Text>
+          <Text style={styles.fabText}>{STRINGS.ADD_EXPENSE[language]}</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
           style={[styles.fab, { backgroundColor: PRIMARY }]} 
           onPress={() => openModal('sale')}
         >
-          <Text style={styles.fabText}>{STRINGS.ADD_SALE.hi}</Text>
+          <Text style={styles.fabText}>{STRINGS.ADD_SALE[language]}</Text>
         </TouchableOpacity>
       </View>
 
@@ -246,6 +256,48 @@ export default function HisaabScreen() {
         </TouchableOpacity>
       </Modal>
 
+
+
+      {/* Language Selection Modal */}
+      <Modal visible={isLangModalVisible} transparent animationType="fade">
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => setLangModalVisible(false)}
+        >
+          <View style={[styles.modalContent, { maxHeight: '60%' }]}>
+            <View style={styles.modalDragHandle} />
+            <Text style={styles.modalTitle}>Select Language</Text>
+            <FlatList
+              data={LANGUAGES}
+              keyExtractor={(item) => item.code}
+              renderItem={({ item }) => (
+                <TouchableOpacity 
+                  style={[
+                    styles.langItem, 
+                    language === item.code && styles.langItemActive
+                  ]} 
+                  onPress={() => {
+                    changeLanguage(item.code);
+                    setLangModalVisible(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.langItemText,
+                    language === item.code && styles.langItemTextActive
+                  ]}>
+                    {item.name}
+                  </Text>
+                  {language === item.code && (
+                    <Icon name="checkmark-circle" size={20} color={WHITE} />
+                  )}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -263,6 +315,12 @@ const styles = StyleSheet.create({
     backgroundColor: WHITE,
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
+    justifyContent: 'space-between',
+  },
+  langSelector: {
+    padding: 8,
+    borderRadius: 12,
+    backgroundColor: PRIMARY_LIGHT,
   },
   logo: {
     width: 40,
@@ -418,5 +476,27 @@ const styles = StyleSheet.create({
     color: WHITE,
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  langItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginBottom: 8,
+    backgroundColor: GRAY_LIGHT,
+  },
+  langItemActive: {
+    backgroundColor: PRIMARY,
+  },
+  langItemText: {
+    fontSize: 16,
+    color: GRAY_DARK,
+    fontWeight: '500',
+  },
+  langItemTextActive: {
+    color: WHITE,
+    fontWeight: 'bold',
   },
 });

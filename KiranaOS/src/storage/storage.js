@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const ENTRIES_KEY = '@kirana_entries';
-const CUSTOMERS_KEY = '@kirana_customers';
+const ENTRIES_KEY = '@dukaanbook_entries';
+const CUSTOMERS_KEY = '@dukaanbook_customers';
 
 export const saveEntry = async (entry) => {
   try {

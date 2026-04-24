@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "KiranaOS",
-    "slug": "KiranaOS",
+    "name": "DukaanBook",
+    "slug": "DukaanBook",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "kiranaos",
+    "scheme": "dukaanbook",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {

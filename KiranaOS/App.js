@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, Image, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import HisaabScreen from './src/screens/HisaabScreen';
 import UdhaarScreen from './src/screens/UdhaarScreen';
 import MahinaScreen from './src/screens/MahinaScreen';
+import { LanguageProvider } from './src/context/LanguageContext';
 
 import { PRIMARY, GRAY_MID, WHITE, BORDER, GRAY_DARK } from './src/constants/colors';
 
@@ -48,6 +49,7 @@ export default function App() {
 
   return (
     <>
+    <LanguageProvider>
       <NavigationContainer>
         <Tab.Navigator
           screenOptions={({ route }) => ({
@@ -79,11 +81,12 @@ export default function App() {
           <Tab.Screen name="Mahina" component={MahinaScreen} />
         </Tab.Navigator>
       </NavigationContainer>
+    </LanguageProvider>
 
       <Modal visible={showWelcome} animationType="fade">
         <View style={styles.welcomeContainer}>
-           <Image source={require('./public/DukaanDost-logo.png')} style={styles.logo} resizeMode="contain" />
-           <Text style={styles.welcomeTitle}>DukaanDost mein aapka swagat hai!</Text>
+           <Image source={require('./public/DukaanBook-logo.png')} style={styles.logo} resizeMode="contain" />
+           <Text style={styles.welcomeTitle}>DukaanBook mein aapka swagat hai!</Text>
            <Text style={styles.welcomeSubtitle}>Aapki dukaan ka sabse accha dost</Text>
            
            <TouchableOpacity style={styles.startButton} onPress={handleStart}>
