@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "DukaanBook",
-    "slug": "DukaanBook",
+    "name": "DukaanDost",
+    "slug": "DukaanDost",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "dukaanbook",
+    "scheme": "dukaandost",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {

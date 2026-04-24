@@ -72,7 +72,7 @@ export default function MahinaScreen() {
   const headerMonthText = `${displayMonthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
 
   const handleWhatsAppShare = async () => {
-    const textToShare = `DukaanBook — ${headerMonthText} ka Hisaab\n————————————\nKul Bikri: ${formatINR(sales)}\nKul Kharcha: ${formatINR(expense)}\nUdhaar Baaki: ${formatINR(udhaar)}\nNet Fayda: ${formatINR(netProfit)}\n————————————\nDukaanBook app se bheja gaya`;
+    const textToShare = `DukaanDost — ${headerMonthText} ka Hisaab\n————————————\nKul Bikri: ${formatINR(sales)}\nKul Kharcha: ${formatINR(expense)}\nUdhaar Baaki: ${formatINR(udhaar)}\nNet Fayda: ${formatINR(netProfit)}\n————————————\nDukaanDost app se bheja gaya`;
     
     try {
       await Share.share({

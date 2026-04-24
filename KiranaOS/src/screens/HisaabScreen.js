@@ -158,11 +158,11 @@ export default function HisaabScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Image 
-          source={require('../../public/DukaanBook-logo.png')} 
+          source={require('../../public/DukaanDost-logo.png')} 
           style={styles.logo} 
           resizeMode="contain" 
         />
-        <Text style={styles.headerTitle}>DukaanBook</Text>
+        <Text style={styles.headerTitle}>DukaanDost</Text>
         <View style={{ flexDirection: 'row' }}>
           <TouchableOpacity 
             style={[styles.langSelector, { marginRight: 8 }]} 

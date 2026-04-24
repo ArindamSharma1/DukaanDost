@@ -5,7 +5,7 @@ const SettingsContext = createContext();
 
 export const SettingsProvider = ({ children }) => {
   const [shopDetails, setShopDetails] = useState({
-    name: 'DukaanBook Store',
+    name: 'DukaanDost Store',
     upiId: '', // e.g., sharma.kirana@okicici
     phone: '',
   });
