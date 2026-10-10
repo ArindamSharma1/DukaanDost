@@ -1,38 +1,59 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, Image, ActivityIndicator } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, Pressable, StyleSheet, Modal, Image, ActivityIndicator } from 'react-native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { StatusBar } from 'expo-status-bar';
+import { useFonts } from 'expo-font';
+import { YatraOne_400Regular } from '@expo-google-fonts/yatra-one';
+import { Mukta_400Regular, Mukta_600SemiBold, Mukta_700Bold } from '@expo-google-fonts/mukta';
 
 import HisaabScreen from './src/screens/HisaabScreen';
 import UdhaarScreen from './src/screens/UdhaarScreen';
 import MahinaScreen from './src/screens/MahinaScreen';
-import { LanguageProvider } from './src/context/LanguageContext';
+import { LanguageProvider, useLanguage } from './src/context/LanguageContext';
 import { SettingsProvider } from './src/context/SettingsContext';
-
-import { PRIMARY, GRAY_MID, WHITE, BORDER, GRAY_DARK } from './src/constants/colors';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { FONT } from './src/constants/theme';
+import { T, tr } from './src/constants/strings';
 
 const Tab = createBottomTabNavigator();
 
+// Respect the phone's font size, but stop very large settings from breaking fixed layouts.
+Text.defaultProps = { ...(Text.defaultProps || {}), maxFontSizeMultiplier: 1.3 };
+
 export default function App() {
+  return (
+    <ThemeProvider>
+      <SettingsProvider>
+        <LanguageProvider>
+          <Root />
+        </LanguageProvider>
+      </SettingsProvider>
+    </ThemeProvider>
+  );
+}
+
+function Root() {
+  const { theme, isDark } = useTheme();
+  const { language } = useLanguage();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [isLoading, setIsLoading] = useState(true);
   const [showWelcome, setShowWelcome] = useState(false);
 
+  const [fontsLoaded] = useFonts({
+    YatraOne_400Regular,
+    Mukta_400Regular,
+    Mukta_600SemiBold,
+    Mukta_700Bold,
+  });
+
   useEffect(() => {
-    const checkFirstLaunch = async () => {
-      try {
-        const hasLaunched = await AsyncStorage.getItem('@has_launched');
-        if (!hasLaunched) {
-          setShowWelcome(true);
-        }
-      } catch (error) {
-        // error
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    checkFirstLaunch();
+    AsyncStorage.getItem('@has_launched')
+      .then((hasLaunched) => { if (!hasLaunched) setShowWelcome(true); })
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
   }, []);
 
   const handleStart = async () => {
@@ -40,39 +61,48 @@ export default function App() {
     setShowWelcome(false);
   };
 
-  if (isLoading) {
+  if (isLoading || !fontsLoaded) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={PRIMARY} />
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color={theme.haldi} />
       </View>
     );
   }
 
+  const navTheme = {
+    ...(isDark ? DarkTheme : DefaultTheme),
+    colors: {
+      ...(isDark ? DarkTheme : DefaultTheme).colors,
+      background: theme.page,
+      card: theme.surface,
+      text: theme.text,
+      border: theme.rule,
+      primary: theme.accent,
+    },
+  };
+
   return (
-    <SettingsProvider>
-      <LanguageProvider>
-      <NavigationContainer>
+    <>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <NavigationContainer theme={navTheme}>
         <Tab.Navigator
           screenOptions={({ route }) => ({
             tabBarIcon: ({ focused, color, size }) => {
-              let iconName;
-
-              if (route.name === 'Hisaab') {
-                iconName = focused ? 'calculator' : 'calculator-outline';
-              } else if (route.name === 'Udhaar') {
-                iconName = focused ? 'book' : 'book-outline';
-              } else if (route.name === 'Mahina') {
-                iconName = focused ? 'calendar' : 'calendar-outline';
-              }
-
-              return <Icon name={iconName} size={size} color={color} />;
+              const icons = {
+                Hisaab: ['calculator', 'calculator-outline'],
+                Udhaar: ['book', 'book-outline'],
+                Mahina: ['calendar', 'calendar-outline'],
+              };
+              const [on, off] = icons[route.name];
+              return <Icon name={focused ? on : off} size={size} color={color} />;
             },
-            tabBarActiveTintColor: PRIMARY,
-            tabBarInactiveTintColor: GRAY_MID,
+            tabBarActiveTintColor: theme.accent,
+            tabBarInactiveTintColor: theme.textDim,
+            tabBarLabelStyle: { fontFamily: FONT.semi, fontSize: 12 },
             tabBarStyle: {
-              backgroundColor: WHITE,
-              borderTopWidth: 0.5,
-              borderTopColor: BORDER,
+              backgroundColor: theme.surface,
+              borderTopWidth: 1,
+              borderTopColor: theme.rule,
             },
             headerShown: false,
           })}
@@ -83,71 +113,53 @@ export default function App() {
         </Tab.Navigator>
       </NavigationContainer>
 
-
       <Modal visible={showWelcome} animationType="fade">
-        <View style={styles.welcomeContainer}>
-           <Image source={require('./public/DukaanDost-logo.png')} style={styles.logo} resizeMode="contain" />
-           <Text style={styles.welcomeTitle}>DukaanDost mein aapka swagat hai!</Text>
-           <Text style={styles.welcomeSubtitle}>Aapki dukaan ka sabse accha dost</Text>
-           
-           <TouchableOpacity style={styles.startButton} onPress={handleStart}>
-              <Text style={styles.startBtnText}>Shuru Karte Hain →</Text>
-           </TouchableOpacity>
+        <View style={styles.welcome}>
+          <Image source={require('./public/DukaanDost-logo.png')} style={styles.logo} resizeMode="contain" />
+          <Text style={styles.welcomeTitle}>{tr(T.WELCOME, language)}</Text>
+          <Text style={styles.welcomeSub}>{tr(T.TAGLINE, language)}</Text>
+          <Pressable style={styles.startBtn} onPress={handleStart} accessibilityRole="button">
+            <Text style={styles.startText}>{tr(T.START, language)}</Text>
+          </Pressable>
         </View>
       </Modal>
-    </LanguageProvider>
-    </SettingsProvider>
+    </>
   );
 }
 
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: WHITE
-  },
-  welcomeContainer: {
-    flex: 1,
-    backgroundColor: WHITE,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 30
-  },
-  logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 40,
-    borderRadius: 24
-  },
-  welcomeTitle: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: GRAY_DARK,
-    textAlign: 'center',
-    marginBottom: 10,
-    letterSpacing: -0.5
-  },
-  welcomeSubtitle: {
-    fontSize: 16,
-    color: GRAY_DARK,
-    opacity: 0.7,
-    textAlign: 'center',
-    marginBottom: 60
-  },
-  startButton: {
-    backgroundColor: PRIMARY,
-    paddingVertical: 18,
-    paddingHorizontal: 30,
-    borderRadius: 30,
-    width: '100%',
-    alignItems: 'center',
-    boxShadow: '0 4 6 rgba(29, 158, 117, 0.3)',
-    elevation: 5
-  },
-  startBtnText: {
-    color: WHITE,
-    fontSize: 18,
-    fontWeight: 'bold'
-  }
-});
+const makeStyles = (theme) =>
+  StyleSheet.create({
+    loading: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.header },
+    welcome: {
+      flex: 1,
+      backgroundColor: theme.header,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 30,
+    },
+    logo: { width: 124, height: 124, marginBottom: 36, borderRadius: 30, backgroundColor: '#FFFFFF', padding: 10 },
+    welcomeTitle: {
+      fontFamily: FONT.display,
+      fontSize: 32,
+      color: theme.onHeader,
+      textAlign: 'center',
+      marginBottom: 10,
+    },
+    welcomeSub: {
+      fontFamily: FONT.body,
+      fontSize: 17,
+      color: theme.onHeaderDim,
+      textAlign: 'center',
+      marginBottom: 56,
+    },
+    startBtn: {
+      minHeight: 58,
+      maxWidth: 420,
+      borderRadius: 18,
+      backgroundColor: theme.haldi,
+      width: '100%',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    startText: { fontFamily: FONT.bold, fontSize: 19, color: theme.onHaldi },
+  });

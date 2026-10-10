@@ -145,3 +145,40 @@ export const LANGUAGES = [
   { code: 'ml', name: 'മലയാളം (Malayalam)' },
   { code: 'pa', name: 'ਪੰਜਾਬੀ (Punjabi)' }
 ];
+
+// Newer copy: Hinglish (hi) and English only; other languages fall back to Hinglish.
+export const T = {
+  TODAY_NET: { hi: 'Aaj ka munafa', en: "Today's profit" },
+  DAY_NET: { hi: 'Is din ka munafa', en: 'Profit that day' },
+  SALES: { hi: 'Bikri', en: 'Sales' },
+  EXPENSE: { hi: 'Kharcha', en: 'Expense' },
+  NEW_SALE: { hi: 'Nayi bikri', en: 'New sale' },
+  NEW_EXPENSE: { hi: 'Naya kharcha', en: 'New expense' },
+  WRITE_IT: { hi: 'Likh do', en: 'Save' },
+  CASH: { hi: 'Cash', en: 'Cash' },
+  WHAT_SOLD: { hi: 'Kya becha? (Maggi, doodh...)', en: 'What did you sell?' },
+  WHAT_SPENT: { hi: 'Kahan diya? (supplier, bijli...)', en: 'What was it for?' },
+  WHO_OWES: { hi: 'Kaun sa customer?', en: 'Which customer?' },
+  NEED_NAME: { hi: 'Udhaar ke liye customer ka naam likho', en: 'Add the customer name for credit' },
+  EMPTY_TITLE: { hi: 'Aaj ka page khaali hai', en: "Today's page is empty" },
+  EMPTY_BODY: { hi: 'Pehli bikri neeche se likho.', en: 'Write your first sale below.' },
+  EMPTY_PAST: { hi: 'Is din koi entry nahi thi.', en: 'No entries on this day.' },
+  BACK_TO_TODAY: { hi: 'Aaj par jao', en: 'Go to today' },
+  SHOP_SETTINGS: { hi: 'Dukaan ki settings', en: 'Shop settings' },
+  SHOP_NAME: { hi: 'Dukaan ka naam', en: 'Shop name' },
+  SAVE_SETTINGS: { hi: 'Settings save karo', en: 'Save settings' },
+  CANCEL: { hi: 'Cancel', en: 'Cancel' },
+  APPEARANCE: { hi: 'Look', en: 'Appearance' },
+  THEME_SYSTEM: { hi: 'Phone jaisa', en: 'System' },
+  THEME_LIGHT: { hi: 'Din', en: 'Light' },
+  THEME_DARK: { hi: 'Raat', en: 'Dark' },
+  SELECT_LANGUAGE: { hi: 'Bhasha chuno', en: 'Choose language' },
+  QR: { hi: 'QR', en: 'QR' },
+  SHARE: { hi: 'Share', en: 'Share' },
+  DELETE: { hi: 'Hatao', en: 'Delete' },
+  WELCOME: { hi: 'DukaanDost mein swagat hai', en: 'Welcome to DukaanDost' },
+  TAGLINE: { hi: 'Hisaab simple. Dukaan khush.', en: 'Simple accounts. Happy shop.' },
+  START: { hi: 'Shuru karo', en: 'Get started' },
+};
+
+export const tr = (entry, language) => entry[language] || entry.hi;
